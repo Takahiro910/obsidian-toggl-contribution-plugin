@@ -19,7 +19,7 @@ interface FilterOptions {
 }
 
 export class ContributionGraph {
-    private readonly CELL_SIZE = 10;
+    private readonly CELL_SIZE = 16;
     private readonly CELL_PADDING = 2;
     private readonly WEEKS_IN_ROW = 53;
     private readonly DAYS_IN_WEEK = 7;
@@ -44,7 +44,16 @@ export class ContributionGraph {
         this.createFilterControls(filterContainer);
 
         // グラフコンテナの作成
-        const graphContainer = this.container.createDiv({ cls: 'contribution-graph-container' });
+        // const graphContainer = this.container.createDiv({ cls: 'contribution-graph-container' });
+        // this.renderGraph(graphContainer);
+        const scrollWrapper = this.container.createDiv({ cls: 'contribution-graph-scroll-wrapper' });
+        scrollWrapper.style.overflowX = 'auto';
+        scrollWrapper.style.overflowY = 'hidden';
+        scrollWrapper.style.paddingBottom = '10px'; // スクロールバーのスペース確保
+
+        const graphContainer = scrollWrapper.createDiv({ cls: 'contribution-graph-container' });
+        graphContainer.style.minWidth = 'min-content'; // コンテンツの最小幅を保証
+
         this.renderGraph(graphContainer);
     }
 
@@ -91,26 +100,6 @@ export class ContributionGraph {
         projectSelect.style.borderRadius = '4px';
     }
 
-    // private filterData(): DayData[] {
-    //     return this.data.map(day => ({
-    //         ...day,
-    //         entries: day.entries.filter(entry => {
-    //             const matchesProject = !this.currentFilter.projectId || entry.jst.project_id === this.currentFilter.projectId;
-    //             return matchesProject;
-    //         }),
-    //         minutes: 0 // This will be recalculated below
-    //     })).map(day => ({
-    //         ...day,
-    //         minutes: day.entries.reduce((total, entry) => {
-    //             let duration = entry.jst.duration;
-    //             if (duration < 0) {
-    //                 duration = Math.floor(Date.now() / 1000) + duration;
-    //             }
-    //             return total + Math.floor(duration / 60);
-    //         }, 0)
-    //     }));
-    // }
-
     private filterData(): DayData[] {
         return this.data.map(day => {
             const filteredEntries = day.entries.filter(entry => {
@@ -154,7 +143,8 @@ export class ContributionGraph {
         // Create tooltip element
         const tooltip = document.createElement('div');
         tooltip.className = 'contribution-tooltip';
-        tooltip.style.position = 'absolute';
+        // tooltip.style.position = 'absolute';
+        tooltip.style.position = 'fixed'; // absoluteからfixedに変更してスクロール時も追従
         tooltip.style.display = 'none';
         tooltip.style.backgroundColor = '#000000';
         tooltip.style.color = '#ffffff';
@@ -238,12 +228,6 @@ export class ContributionGraph {
             sortedEntries.forEach(entry => {
                 const duration = Math.floor(entry.jst.duration / 60);
                 const project = this.projects.find(p => p.id === entry.jst.project_id);
-
-                // const entryStartUTC = new Date(entry.jst.start);
-                // const timeStr = entryStartUTC.toLocaleTimeString('ja-JP', {
-                //     hour: '2-digit',
-                //     minute: '2-digit'
-                // });
 
                 const timeStr = entry.jst.start.toLocaleTimeString('ja-JP', {
                     hour: '2-digit',

@@ -103,100 +103,12 @@ export default class TogglPlugin extends Plugin {
         return timeEntries;
     }
 
-    // private processDailyData(timeEntries: TimeEntry[], startDate: Date, endDate: Date): DayData[] {
-    //     const dailyData: DayData[] = [];
-    //     const currentDate = new Date(startDate);
-
-    //     while (currentDate <= endDate) {
-    //         // 現在の日付をYYYY-MM-DD形式で取得
-    //         const currentDateStr = currentDate.toISOString().split('T')[0];
-
-    //         const dayEntries = timeEntries.filter(entry => {
-    //             // UTCのタイムスタンプを9時間進めてJSTに変換
-    //             const entryStartUTC = new Date(entry.start);
-    //             const entryStartJST = new Date(entryStartUTC.getTime() + (9 * 60 * 60 * 1000));
-    //             const entryDateStr = entryStartJST.toISOString().split('T')[0];
-
-    //             return entryDateStr === currentDateStr;
-    //         }).map(entry => {
-    //             const entryStartUTC = new Date(entry.start);
-    //             const entryStartJST = new Date(entryStartUTC.getTime() + (9 * 60 * 60 * 1000));
-                
-    //             return {
-    //                 original: entry,
-    //                 jst: {
-    //                     start: entryStartJST,
-    //                     description: entry.description,
-    //                     duration: entry.duration,
-    //                     project_id: entry.project_id
-    //                 }
-    //             };
-    //         });
-
-    //         const totalMinutes = dayEntries.reduce((total, entry) => {
-    //             let duration = entry.original.duration;
-    //             if (duration < 0) {
-    //                 duration = Math.floor(Date.now() / 1000) + duration;
-    //             }
-    //             return total + Math.floor(duration / 60);
-    //         }, 0);
-
-    //         dailyData.push({
-    //             date: new Date(currentDate),
-    //             minutes: totalMinutes,
-    //             entries: dayEntries
-    //         });
-
-    //         currentDate.setDate(currentDate.getDate() + 1);
-    //     }
-
-    //     return dailyData;
-    // }
-
     private processDailyData(timeEntries: TimeEntry[], startDate: Date, endDate: Date): DayData[] {
         const dailyData: DayData[] = [];
         const currentDate = new Date(startDate);
     
         while (currentDate <= endDate) {
             const currentDateStr = currentDate.toISOString().split('T')[0];
-    
-            // const dayEntries = timeEntries.filter(entry => {
-            //     // UTCのタイムスタンプを9時間進めてJSTに変換 (ここで1回だけ実行)
-            //     const entryStartJST = new Date(new Date(entry.start).getTime() + (9 * 60 * 60 * 1000));
-            //     const entryDateStr = entryStartJST.toISOString().split('T')[0];
-            //     return entryDateStr === currentDateStr;
-            // }).map(entry => {
-            //     // // フィルタリング時に変換した entryStartJST を使用する
-            //     const entryStartJST = new Date(new Date(entry.start).getTime() + (9 * 60 * 60 * 1000)); 
-            //     return {
-            //         original: entry,
-            //         jst: {
-            //             start: entryStartJST,
-            //             description: entry.description,
-            //             duration: entry.duration,
-            //             project_id: entry.project_id
-            //         }
-            //     };
-            // });
-
-            // const dayEntries = timeEntries.filter(entry => {
-            //     // entry.start (文字列) から Date オブジェクトを生成。これはシステムのタイムゾーンで解釈される (つまりJST)
-            //     const entryStartJST = new Date(entry.start);
-            //     const entryDateStr = entryStartJST.toISOString().split('T')[0];
-            //     return entryDateStr === currentDateStr;
-            // }).map(entry => {
-            //     // 同様に、システムのタイムゾーンで解釈された Date オブジェクトを生成
-            //     const entryStartJST = new Date(entry.start);
-            //     return {
-            //         original: entry,
-            //         jst: {
-            //             start: entryStartJST,
-            //             description: entry.description,
-            //             duration: entry.duration,
-            //             project_id: entry.project_id
-            //         }
-            //     };
-            // });
 
             const dayEntries = timeEntries.filter(entry => {
                 const entryStartJST = new Date(entry.start);
