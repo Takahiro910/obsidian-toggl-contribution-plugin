@@ -6,3 +6,43 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+/* グラフのスタイル */
+.toggl-contribution-graph {
+    padding: 10px;
+}
+
+.contribution-filter-wrapper {
+    margin-bottom: 10px;
+}
+
+.contribution-filter {
+    padding: 4px;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+/* ツールチップのスタイル */
+.contribution-tooltip {
+    position: absolute;
+    display: none;
+    background-color: #000000;
+    color: #ffffff;
+    padding: 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* Live Previewモード用 */
+.markdown-source-view.mod-cm6 .toggl-contribution-graph {
+    position: relative;
+    display: block;
+}
+
+/* Reading/Live Previewモード共通 */
+.markdown-preview-section .toggl-contribution-graph,
+.markdown-source-view.mod-cm6 .toggl-contribution-graph {
+    overflow: visible;
+}

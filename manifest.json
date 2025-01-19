@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "toggl-contribution-plugin",
+	"name": "Toggl Track Contribution Plugin",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Visualize your track data in contribution graph style via your API.",
+	"author": "Takahiro Kudo",
+	"authorUrl": "https://github.com/Takahiro910",
+	"fundingUrl": "",
 	"isDesktopOnly": false
 }
