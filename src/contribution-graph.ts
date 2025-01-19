@@ -24,6 +24,8 @@ export class ContributionGraph {
     private readonly WEEKS_IN_ROW = 53;
     private readonly DAYS_IN_WEEK = 7;
     private readonly LABEL_WIDTH = 30; // 曜日ラベル用の幅
+    private readonly MONTH_LABEL_HEIGHT = 20; // 月ラベル用の高さを追加
+    private readonly MONTH_LABEL_PADDING = 8; // 月ラベルとグラフの間のパディング
     private colorLevels = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
     private currentFilter: FilterOptions = {};
     private projects: Project[] = [];
@@ -44,6 +46,29 @@ export class ContributionGraph {
         return day === 0 ? 6 : day - 1;
     }
 
+    private getMonthPositions(filteredData: DayData[], startDayOfWeek: number): { month: string; x: number }[] {
+        const monthPositions: { month: string; x: number }[] = [];
+        let currentMonth = -1;
+
+        filteredData.forEach((dayData, index) => {
+            const date = dayData.date;
+            const month = date.getMonth();
+            const isFirstDay = date.getDate() === 1;
+
+            if (month !== currentMonth && isFirstDay) {
+                const totalDays = index + startDayOfWeek;
+                const week = Math.floor(totalDays / this.DAYS_IN_WEEK);
+                const x = week * (this.CELL_SIZE + this.CELL_PADDING) + this.LABEL_WIDTH;
+
+                const monthName = date.toLocaleString('en-US', { month: 'short' });
+                monthPositions.push({ month: monthName, x });
+                currentMonth = month;
+            }
+        });
+
+        return monthPositions;
+    }
+
     render() {
         this.container.empty();
         
@@ -52,8 +77,6 @@ export class ContributionGraph {
         this.createFilterControls(filterContainer);
 
         // グラフコンテナの作成
-        // const graphContainer = this.container.createDiv({ cls: 'contribution-graph-container' });
-        // this.renderGraph(graphContainer);
         const scrollWrapper = this.container.createDiv({ cls: 'contribution-graph-scroll-wrapper' });
         scrollWrapper.style.overflowX = 'auto';
         scrollWrapper.style.overflowY = 'hidden';
@@ -144,76 +167,88 @@ export class ContributionGraph {
         const firstDate = filteredData[0].date;
         const startDayOfWeek = this.getDayOfWeek(firstDate);
 
-        const width = (this.CELL_SIZE + this.CELL_PADDING) * this.WEEKS_IN_ROW;
-        const height = (this.CELL_SIZE + this.CELL_PADDING) * this.DAYS_IN_WEEK;
+        const width = (this.CELL_SIZE + this.CELL_PADDING) * this.WEEKS_IN_ROW + this.LABEL_WIDTH;
+        const totalHeight = this.MONTH_LABEL_HEIGHT + this.MONTH_LABEL_PADDING + 
+            (this.CELL_SIZE + this.CELL_PADDING) * this.DAYS_IN_WEEK;
 
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('width', width.toString());
-        svg.setAttribute('height', height.toString());
+        svg.setAttribute('height', totalHeight.toString());
         svg.setAttribute('class', 'contribution-graph');
 
-        // Add weekday labels
-        const weekdays = ['Mon', 'Wed', 'Fri'];
-        const weekdayPositions = [0, 2, 4]; // Monday=0, Wednesday=2, Friday=4
-        
+        // Month labels group
+        const monthsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        monthsGroup.setAttribute('class', 'months');
+        svg.appendChild(monthsGroup);
+
+        // Main graph group (includes weekday labels, cells)
+        const graphGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        graphGroup.setAttribute('class', 'graph');
+        graphGroup.setAttribute('transform', 
+            `translate(0, ${this.MONTH_LABEL_HEIGHT + this.MONTH_LABEL_PADDING})`);
+        svg.appendChild(graphGroup);
+
+        // Month labels
+        const monthPositions = this.getMonthPositions(filteredData, startDayOfWeek);
+        monthPositions.forEach(({ month, x }) => {
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', x.toString());
+            text.setAttribute('y', (this.MONTH_LABEL_HEIGHT / 2).toString());
+            text.setAttribute('fill', '#666666');
+            text.setAttribute('font-size', '12px');
+            text.setAttribute('font-family', 'sans-serif');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.textContent = month;
+            monthsGroup.appendChild(text);
+        });
+
+        // Weekday labels
+        const weekdays = ['Mon', 'Wed', 'Fri', 'Sun'];
+        const weekdayPositions = [0, 2, 4, 6];
         weekdayPositions.forEach((pos, index) => {
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-
-            // テキストのy座標を調整：セルの上端 + セルの半分の位置に設定
             const yPos = pos * (this.CELL_SIZE + this.CELL_PADDING) + (this.CELL_SIZE / 2);
-
             text.setAttribute('x', '0');
             text.setAttribute('y', yPos.toString());
             text.setAttribute('fill', '#666666');
             text.setAttribute('font-size', '12px');
             text.setAttribute('font-family', 'sans-serif');
             text.setAttribute('text-anchor', 'start');
-            text.setAttribute('alignment-baseline', 'middle'); // dominant-baselineをalignment-baselineに変更
+            text.setAttribute('alignment-baseline', 'middle');
             text.textContent = weekdays[index];
-            svg.appendChild(text);
+            graphGroup.appendChild(text);
         });
 
-        // Create tooltip element
-        const tooltip = document.createElement('div');
-        tooltip.className = 'contribution-tooltip';
-        tooltip.style.position = 'fixed'; // absoluteからfixedに変更してスクロール時も追従
-        tooltip.style.display = 'none';
-        tooltip.style.backgroundColor = '#000000';
-        tooltip.style.color = '#ffffff';
-        tooltip.style.padding = '5px';
-        tooltip.style.borderRadius = '3px';
-        tooltip.style.fontSize = '12px';
-        tooltip.style.zIndex = '1000';
-        container.appendChild(tooltip);
+        // Create cells group
+        const cellsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        cellsGroup.setAttribute('class', 'cells');
+        cellsGroup.setAttribute('transform', `translate(${this.LABEL_WIDTH}, 0)`);
+        graphGroup.appendChild(cellsGroup);
 
-        // 最初の週に空のセルを追加
-        for (let i = 0; i < startDayOfWeek; i++) {
-            const x = 0 * (this.CELL_SIZE + this.CELL_PADDING) + this.LABEL_WIDTH;
-            const y = i * (this.CELL_SIZE + this.CELL_PADDING);
-            
-            const emptyRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            emptyRect.setAttribute('x', x.toString());
-            emptyRect.setAttribute('y', y.toString());
-            emptyRect.setAttribute('width', this.CELL_SIZE.toString());
-            emptyRect.setAttribute('height', this.CELL_SIZE.toString());
-            emptyRect.setAttribute('rx', '2');
-            emptyRect.setAttribute('ry', '2');
-            emptyRect.setAttribute('fill', '#ebedf0');
-            svg.appendChild(emptyRect);
+        // Render empty cells for the first week
+        if (startDayOfWeek > 0) {
+            for (let i = 0; i < startDayOfWeek; i++) {
+                const emptyRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                emptyRect.setAttribute('x', '0');
+                emptyRect.setAttribute('y', (i * (this.CELL_SIZE + this.CELL_PADDING)).toString());
+                emptyRect.setAttribute('width', this.CELL_SIZE.toString());
+                emptyRect.setAttribute('height', this.CELL_SIZE.toString());
+                emptyRect.setAttribute('rx', '2');
+                emptyRect.setAttribute('ry', '2');
+                emptyRect.setAttribute('fill', '#ebedf0');
+                cellsGroup.appendChild(emptyRect);
+            }
         }
 
-        // データを曜日に合わせて配置
+        // Render data cells
         filteredData.forEach((dayData, index) => {
             const totalDays = index + startDayOfWeek;
             const week = Math.floor(totalDays / this.DAYS_IN_WEEK);
             const dayOfWeek = totalDays % this.DAYS_IN_WEEK;
 
-            const x = week * (this.CELL_SIZE + this.CELL_PADDING) + this.LABEL_WIDTH;
-            const y = dayOfWeek * (this.CELL_SIZE + this.CELL_PADDING);
-            
             const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            rect.setAttribute('x', x.toString());
-            rect.setAttribute('y', y.toString());
+            rect.setAttribute('x', (week * (this.CELL_SIZE + this.CELL_PADDING)).toString());
+            rect.setAttribute('y', (dayOfWeek * (this.CELL_SIZE + this.CELL_PADDING)).toString());
             rect.setAttribute('width', this.CELL_SIZE.toString());
             rect.setAttribute('height', this.CELL_SIZE.toString());
             rect.setAttribute('rx', '2');
@@ -221,33 +256,47 @@ export class ContributionGraph {
 
             const colorIndex = this.getColorIndex(dayData.minutes, maxMinutes);
             rect.setAttribute('fill', this.colorLevels[colorIndex]);
-
-            // データの日付を属性として追加（デバッグ用）
             rect.setAttribute('data-date', dayData.date.toISOString().split('T')[0]);
 
-            // Add hover events
-            rect.addEventListener('mouseover', (e) => {
-                const target = e.target as SVGRectElement;
-                target.style.stroke = '#000000';
-                target.style.strokeWidth = '1';
-
-                tooltip.style.display = 'block';
-                const rect = target.getBoundingClientRect();
-                tooltip.style.left = `${rect.right + 10}px`;
-                tooltip.style.top = `${rect.top}px`;
-                tooltip.innerHTML = this.generateTooltipContent(dayData);
-            });
-
-            rect.addEventListener('mouseout', (e) => {
-                const target = e.target as SVGRectElement;
-                target.style.stroke = 'none';
-                tooltip.style.display = 'none';
-            });
-
-            svg.appendChild(rect);
+            this.addHoverEvents(rect, dayData);
+            cellsGroup.appendChild(rect);
         });
 
         container.appendChild(svg);
+    }
+
+    private addHoverEvents(rect: SVGRectElement, dayData: DayData) {
+        const tooltip = this.createTooltip();
+        rect.addEventListener('mouseover', (e) => {
+            rect.style.stroke = '#000000';
+            rect.style.strokeWidth = '1';
+
+            tooltip.style.display = 'block';
+            const rectBounds = rect.getBoundingClientRect();
+            tooltip.style.left = `${rectBounds.right + 10}px`;
+            tooltip.style.top = `${rectBounds.top}px`;
+            tooltip.innerHTML = this.generateTooltipContent(dayData);
+        });
+
+        rect.addEventListener('mouseout', () => {
+            rect.style.stroke = 'none';
+            tooltip.style.display = 'none';
+        });
+    }
+
+    private createTooltip(): HTMLDivElement {
+        const tooltip = document.createElement('div');
+        tooltip.className = 'contribution-tooltip';
+        tooltip.style.position = 'fixed';
+        tooltip.style.display = 'none';
+        tooltip.style.backgroundColor = '#000000';
+        tooltip.style.color = '#ffffff';
+        tooltip.style.padding = '5px';
+        tooltip.style.borderRadius = '3px';
+        tooltip.style.fontSize = '12px';
+        tooltip.style.zIndex = '1000';
+        this.container.appendChild(tooltip);
+        return tooltip;
     }
 
     private getColorIndex(minutes: number, maxMinutes: number): number {
