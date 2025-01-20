@@ -76,14 +76,15 @@ export class ContributionGraph {
         const filterContainer = this.container.createDiv({ cls: 'contribution-filters' });
         this.createFilterControls(filterContainer);
 
-        // グラフコンテナの作成
-        const scrollWrapper = this.container.createDiv({ cls: 'contribution-graph-scroll-wrapper' });
-        scrollWrapper.style.overflowX = 'auto';
-        scrollWrapper.style.overflowY = 'hidden';
-        scrollWrapper.style.paddingBottom = '10px'; // スクロールバーのスペース確保
+        // スクロール可能なラッパーの作成
+        const scrollWrapper = this.container.createDiv({ 
+            cls: 'contribution-graph-scroll-wrapper' 
+        });
 
-        const graphContainer = scrollWrapper.createDiv({ cls: 'contribution-graph-container' });
-        graphContainer.style.minWidth = 'min-content'; // コンテンツの最小幅を保証
+        // グラフコンテナの作成
+        const graphContainer = scrollWrapper.createDiv({ 
+            cls: 'contribution-graph-container' 
+        });
 
         this.renderGraph(graphContainer);
     }
@@ -168,13 +169,20 @@ export class ContributionGraph {
         const startDayOfWeek = this.getDayOfWeek(firstDate);
 
         const width = (this.CELL_SIZE + this.CELL_PADDING) * this.WEEKS_IN_ROW + this.LABEL_WIDTH;
-        const totalHeight = this.MONTH_LABEL_HEIGHT + this.MONTH_LABEL_PADDING + 
+        const height = this.MONTH_LABEL_HEIGHT + this.MONTH_LABEL_PADDING + 
             (this.CELL_SIZE + this.CELL_PADDING) * this.DAYS_IN_WEEK;
 
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('width', width.toString());
-        svg.setAttribute('height', totalHeight.toString());
+        svg.setAttribute('height', height.toString());
         svg.setAttribute('class', 'contribution-graph');
+        
+        Object.assign(svg.style, {
+            display: 'block',
+            width: `${width}px`,
+            height: `${height}px`,
+            minWidth: `${width}px`,
+        });
 
         // Month labels group
         const monthsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -265,38 +273,52 @@ export class ContributionGraph {
         container.appendChild(svg);
     }
 
+    private createTooltip(): HTMLDivElement {
+        const tooltip = document.createElement('div');
+        tooltip.className = 'contribution-tooltip';
+        
+        // ツールチップのスタイル設定を一箇所にまとめる
+        Object.assign(tooltip.style, {
+            position: 'fixed',
+            display: 'none',
+            backgroundColor: '#000000',
+            color: '#ffffff',
+            padding: '5px',
+            borderRadius: '3px',
+            fontSize: '12px',
+            zIndex: 'var(--layer-tooltip)', // Obsidianのツールチップレイヤーと同じ高さに
+            pointerEvents: 'none', // ツールチップが邪魔にならないように追加
+        });
+        
+        // ツールチップをdocument.bodyに追加することで、
+        // エディタのz-indexの影響を受けにくくする
+        document.body.appendChild(tooltip);
+        return tooltip;
+    }
+
     private addHoverEvents(rect: SVGRectElement, dayData: DayData) {
         const tooltip = this.createTooltip();
-        rect.addEventListener('mouseover', (e) => {
+        
+        const showTooltip = (e: MouseEvent) => {
             rect.style.stroke = '#000000';
             rect.style.strokeWidth = '1';
 
             tooltip.style.display = 'block';
-            const rectBounds = rect.getBoundingClientRect();
-            tooltip.style.left = `${rectBounds.right + 10}px`;
-            tooltip.style.top = `${rectBounds.top}px`;
+            // ページ全体におけるマウス位置を使用
+            tooltip.style.left = `${e.pageX + 10}px`;
+            tooltip.style.top = `${e.pageY + 10}px`;
             tooltip.innerHTML = this.generateTooltipContent(dayData);
-        });
+        };
 
-        rect.addEventListener('mouseout', () => {
+        const hideTooltip = () => {
             rect.style.stroke = 'none';
             tooltip.style.display = 'none';
-        });
-    }
+        };
 
-    private createTooltip(): HTMLDivElement {
-        const tooltip = document.createElement('div');
-        tooltip.className = 'contribution-tooltip';
-        tooltip.style.position = 'fixed';
-        tooltip.style.display = 'none';
-        tooltip.style.backgroundColor = '#000000';
-        tooltip.style.color = '#ffffff';
-        tooltip.style.padding = '5px';
-        tooltip.style.borderRadius = '3px';
-        tooltip.style.fontSize = '12px';
-        tooltip.style.zIndex = '1000';
-        this.container.appendChild(tooltip);
-        return tooltip;
+        // マウスムーブでの位置更新を追加
+        rect.addEventListener('mousemove', showTooltip);
+        rect.addEventListener('mouseover', showTooltip);
+        rect.addEventListener('mouseout', hideTooltip);
     }
 
     private getColorIndex(minutes: number, maxMinutes: number): number {

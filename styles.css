@@ -7,9 +7,17 @@ If your plugin does not need CSS, delete this file.
 
 */
 
-/* グラフのスタイル */
+/* メインコンテナ - 両モード共通 */
 .toggl-contribution-graph {
+    position: relative;
+    display: block;
+    overflow: visible;
     padding: 10px;
+}
+
+/* フィルター関連 */
+.contribution-filters {
+    margin-bottom: 16px;
 }
 
 .contribution-filter-wrapper {
@@ -22,27 +30,50 @@ If your plugin does not need CSS, delete this file.
     margin-right: 10px;
 }
 
-/* ツールチップのスタイル */
+/* グラフ表示関連 */
+.contribution-graph-scroll-wrapper {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    position: relative; /* ツールチップの基準位置用 */
+}
+
+.contribution-graph-container {
+    min-width: min-content;
+    width: fit-content;
+    position: relative;
+}
+
+/* ツールチップ - 両モード共通 */
 .contribution-tooltip {
-    position: absolute;
-    display: none;
+    position: fixed !important;
+    z-index: 1000;
+    pointer-events: none;
     background-color: #000000;
     color: #ffffff;
     padding: 5px;
     border-radius: 3px;
     font-size: 12px;
-    z-index: 1000;
-    pointer-events: none;
 }
 
 /* Live Previewモード用 */
 .markdown-source-view.mod-cm6 .toggl-contribution-graph {
     position: relative;
     display: block;
+    z-index: 1; /* エディタのz-indexより上に表示 */
 }
 
-/* Reading/Live Previewモード共通 */
+/* Reading/Live Previewモード共通の表示調整 */
 .markdown-preview-section .toggl-contribution-graph,
 .markdown-source-view.mod-cm6 .toggl-contribution-graph {
     overflow: visible;
+}
+
+/* ツールチップがエディタに隠れないようにする */
+.markdown-source-view.mod-cm6 .contribution-tooltip {
+    z-index: var(--layer-tooltip); /* Obsidianのツールチップレイヤーと同じ高さに */
 }
